@@ -43,6 +43,15 @@ class MainApp(QWidget):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = cv2.flip(frame, 1)
 
+        # Use the Viola-Jones face detector to detect faces to classify
+        face_cascade = cv2.CascadeClassifier(
+            '../resources/haarcascade_frontalface_default.xml')
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        for x, y, w, h in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
         # Display the image in the image area
         image = QImage(frame, frame.shape[1], frame.shape[0],
                        frame.strides[0], QImage.Format_RGB888)
