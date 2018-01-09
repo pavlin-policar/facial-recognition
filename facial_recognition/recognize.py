@@ -21,6 +21,19 @@ class MultipleFacesError(Exception):
     pass
 
 
+class CapitalizedStringListModel(QStringListModel):
+    def data(self, index, role):
+        result = super().data(index, role)
+
+        if role == Qt.UserRole:
+            result = super().data(index, Qt.DisplayRole)
+
+        if result and role == Qt.DisplayRole:
+            result = result.capitalize()
+
+        return result
+
+
 class MainApp(QWidget):
     def __init__(self, fps=30, parent=None):
         # type: (int, Optional[QWidget]) -> None
@@ -28,7 +41,8 @@ class MainApp(QWidget):
 
         self.pkg_path = path.dirname(path.dirname(path.abspath(__file__)))
         self.training_data_dir = path.join(self.pkg_path, 'train')
-        self.existing_labels = QStringListModel(self.get_existing_labels())
+        self.existing_labels = CapitalizedStringListModel(
+            self.get_existing_labels())
 
         self.fps = fps
         self.video_size = QSize(640, 480)
@@ -107,7 +121,7 @@ class MainApp(QWidget):
         string_list = self.existing_labels.stringList()
 
         if new_label not in string_list:
-            string_list.append(new_label.capitalize())
+            string_list.append(new_label)
             self.existing_labels.setStringList(string_list)
 
             # Automatically select the added label
@@ -161,6 +175,9 @@ class MainApp(QWidget):
             face = cv2.resize(face, (100, 100))
             denoised_image = cv2.fastNlMeansDenoising(face)
 
+            if not self.selected_label:
+                return
+
             self.save_image(denoised_image, self.selected_label)
 
     @property
@@ -169,8 +186,7 @@ class MainApp(QWidget):
         if len(index) < 1:
             return None
 
-        label = self.existing_labels.data(index[0], Qt.DisplayRole)
-        label = label.lower()
+        label = self.existing_labels.data(index[0], Qt.UserRole)
 
         return label
 
@@ -181,7 +197,6 @@ class MainApp(QWidget):
 
         labels = listdir(self.training_data_dir)
         labels = list(filter(lambda f: '.' not in f, labels))
-        labels = [s.capitalize() for s in labels]
 
         return labels
 
