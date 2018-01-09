@@ -104,7 +104,7 @@ class LDA(Projection):
         sorted_idx = np.argsort(eigvals)[::-1]
         eigvals, eigvecs = eigvals[sorted_idx], eigvecs[:, sorted_idx]
 
-        self.subspace_basis = eigvecs
+        self.subspace_basis = eigvecs.astype(np.float64)
         self.eigenvalues = eigvals
 
         self.class_means = np.dot(class_means, self.P)
