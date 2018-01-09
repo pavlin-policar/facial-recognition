@@ -1,7 +1,10 @@
 import fire
+import matplotlib.pyplot as plt
+import numpy as np
 
 from facial_recognition import data_provider, plotting
-from facial_recognition.model import PCALDAClassifier, PCALDA, PCA
+from facial_recognition.model import PCALDA, PCA
+from facial_recognition.recognize import MainApp
 
 
 def show_scatter(model_fname, images_dir):
@@ -27,6 +30,22 @@ def train_pca(images_dir):
     projection = projector.project(X)
     plotting.scatter(projection, y, mapping)
     plotting.explained_variance(projector)
+
+
+def show_pca_eigv(model_fname, start=0, rows=3, cols=4):
+    model = data_provider.load_model(model_fname)
+    eigvecs = model.pca_lda.pca.subspace_basis
+
+    for fig_idx, idx in enumerate(range(start, start + rows * cols)):
+        ax = plt.subplot(rows, cols, fig_idx + 1)
+        image = np.reshape(eigvecs[:, idx], MainApp.IMAGE_SIZE)
+
+        ax.set_title('Eigenvector %d' % idx)
+        ax.imshow(image, cmap='gray')
+        ax.grid(False), ax.set_xticklabels([]), ax.set_yticklabels([])
+
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == '__main__':

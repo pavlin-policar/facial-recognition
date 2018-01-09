@@ -39,6 +39,7 @@ class CapitalizedStringListModel(QStringListModel):
 
 class MainApp(QWidget):
     STRANGER_DANGER = 0.5
+    IMAGE_SIZE = (100, 100)
 
     def __init__(self, fps=30, parent=None):
         # type: (int, Optional[QWidget]) -> None
@@ -60,7 +61,6 @@ class MainApp(QWidget):
 
         self.fps = fps
         self.video_size = QSize(640, 480)
-        self.image_size = (100, 100)
 
         self.gray_image = None
         self.detected_faces = []
@@ -190,7 +190,7 @@ class MainApp(QWidget):
 
             # Label the detected face as per the model
             face = gray[y:y + h, x:x + w]
-            face = cv2.resize(face, self.image_size)
+            face = cv2.resize(face, self.IMAGE_SIZE)
             predicted, distance = self.classify_face(face)
 
             if distance > self.STRANGER_DANGER:
@@ -230,7 +230,7 @@ class MainApp(QWidget):
             x, y, w, h = self.detected_faces[0]
 
             face = self.gray_image[y:y + h, x:x + w]
-            face = cv2.resize(face, self.image_size)
+            face = cv2.resize(face, self.IMAGE_SIZE)
             denoised_image = cv2.fastNlMeansDenoising(face)
 
             if not self.selected_label:
