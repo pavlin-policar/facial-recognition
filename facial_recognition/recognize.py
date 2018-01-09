@@ -1,3 +1,4 @@
+import pickle
 import sys
 from contextlib import contextmanager
 from os import path, mkdir, listdir
@@ -11,8 +12,7 @@ from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
-from facial_recognition import plotting
-from facial_recognition.model import PCA, LDA, PCALDA
+from facial_recognition.model import PCALDA, PCALDAClassifier
 
 
 class NoFacesError(Exception):
@@ -43,6 +43,8 @@ class MainApp(QWidget):
 
         self.pkg_path = path.dirname(path.dirname(path.abspath(__file__)))
         self.training_data_dir = path.join(self.pkg_path, 'train')
+        self.models_dir = path.join(self.pkg_path, 'models')
+        self.active_model_fname = 'active.p'
         self.existing_labels = CapitalizedStringListModel(
             self.get_existing_labels())
 
@@ -152,7 +154,28 @@ class MainApp(QWidget):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
         projector = PCALDA(pca_components=25).fit(X, y)
-        projected = projector.project(X)
+        classifier = PCALDAClassifier(projector)
+
+        # Save the classifier to file
+        self.save_model(classifier)
+
+    def save_model(self, model):
+        """Save the trained model to disk."""
+        if not path.exists(self.models_dir):
+            mkdir(self.models_dir)
+
+        model_fname = path.join(self.models_dir, self.active_model_fname)
+        with open(model_fname, 'wb') as file_handle:
+            pickle.dump(model, file_handle)
+
+    def load_model(self):
+        """Load the trained model from disk."""
+        model_fname = path.join(self.models_dir, self.active_model_fname)
+        assert path.exists(model_fname), \
+            'Model does not exist. Train a model first'
+
+        with open(model_fname, 'rb') as file_handle:
+            return pickle.load(file_handle)
 
     def add_new_label(self):
         new_label = self.new_label_txt.text()
