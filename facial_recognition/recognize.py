@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
 from facial_recognition import plotting, data_provider
-from facial_recognition.model import PCALDA, PCALDAClassifier, PCA
+from facial_recognition.model import PCALDA, PCALDAClassifier, PCA, LDA
 
 
 class NoFacesError(Exception):
@@ -45,7 +45,13 @@ class MainApp(QWidget):
         self.pkg_path = path.dirname(path.dirname(path.abspath(__file__)))
         self.training_data_dir = path.join(self.pkg_path, 'train')
         self.models_dir = path.join(self.pkg_path, 'models')
-        self.active_model_fname = 'active.p'
+        self.model_fname = 'active.p'
+
+        try:
+            self.model = self.load_model()
+        except AssertionError:
+            self.model = None
+
         self.existing_labels = CapitalizedStringListModel(
             self.get_existing_labels())
 
@@ -122,6 +128,14 @@ class MainApp(QWidget):
         self.timer.timeout.connect(self.display_video_stream)
         self.timer.start(int(1000 / self.fps))
 
+    def classify_face(self, image):
+        if self.model is None:
+            return
+
+        predicted, = self.model.predict(image.ravel())
+        labels = self.existing_labels.stringList()
+        return labels[predicted]
+
     def get_training_data(self):
         """Read the images from disk into an n*(w*h) matrix."""
         return data_provider.get_image_data_from_directory(
@@ -130,27 +144,28 @@ class MainApp(QWidget):
     def train(self):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
-        projector = PCA().fit(X)
-        # classifier = PCALDAClassifier(projector)
-        # plotting.explained_variance(classifier.pca_lda.pca)
+        projector = PCALDA(pca_components=50).fit(X, y)
+        classifier = PCALDAClassifier(projector)
         projected = projector.project(X)
-        plotting.scatter(projected, y, mapping)
+
+        # Replace the existing running model
+        self.model = classifier
 
         # Save the classifier to file
-        # self.save_model(classifier)
+        self.save_model(classifier)
 
     def save_model(self, model):
         """Save the trained model to disk."""
         if not path.exists(self.models_dir):
             mkdir(self.models_dir)
 
-        model_fname = path.join(self.models_dir, self.active_model_fname)
+        model_fname = path.join(self.models_dir, self.model_fname)
         with open(model_fname, 'wb') as file_handle:
             pickle.dump(model, file_handle)
 
     def load_model(self):
         """Load the trained model from disk."""
-        model_fname = path.join(self.models_dir, self.active_model_fname)
+        model_fname = path.join(self.models_dir, self.model_fname)
         assert path.exists(model_fname), \
             'Model does not exist. Train a model first'
 
@@ -190,7 +205,14 @@ class MainApp(QWidget):
         self.detected_faces = face_cascade.detectMultiScale(gray, 1.3, 5)
         for x, y, w, h in self.detected_faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
-            cv2.putText(frame, 'Barbara 74.5%', (x, y + h + 15),
+
+            face = gray[y:y + h, x:x + w]
+            face = cv2.resize(face, self.image_size)
+            predicted = self.classify_face(face)
+
+            text = '%s (%.1f%%)' % (predicted.capitalize(), 73.42)
+
+            cv2.putText(frame, text, (x, y + h + 15),
                         cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
 
         # Display the image in the image area

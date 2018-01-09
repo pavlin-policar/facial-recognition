@@ -144,7 +144,12 @@ class PCALDA(Projection):
         return X.dot(self.lda.P.T).dot(self.pca.P.T) + self.pca.X_mean
 
 
-class PCALDAClassifier:
+class Classifier:
+    def predict(self, X):
+        """Return the labels for the given data."""
+
+
+class PCALDAClassifier(Classifier):
     def __init__(self, pca_lda):
         # type: (PCALDA) -> None
         self.pca_lda = pca_lda
