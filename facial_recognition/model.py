@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial import distance
 
 
 class Projection:
@@ -136,3 +137,18 @@ class PCALDA(Projection):
 
     def reconstruct(self, X):
         return X.dot(self.lda.P.T).dot(self.pca.P.T) + self.pca.X_mean
+
+
+class PCALDAClassifier:
+    def __init__(self, pca_lda):
+        # type: (PCALDA) -> None
+        self.pca_lda = pca_lda
+
+    def predict(self, X):
+        # Find the nearest class mean to each new sample
+        class_means = self.pca_lda.lda.class_means
+
+        projected = self.pca_lda.project(np.atleast_2d(X))
+
+        distances = distance.cdist(projected, class_means)
+        return np.argmin(distances, axis=1)
