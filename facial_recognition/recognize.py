@@ -13,7 +13,8 @@ from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
 from facial_recognition import plotting, data_provider
-from facial_recognition.model import PCALDA, PCALDAClassifier, PCA, LDA
+from facial_recognition.model import PCALDA, PCALDAClassifier, PCA, LDA, \
+    softmax
 
 
 class NoFacesError(Exception):
@@ -132,9 +133,11 @@ class MainApp(QWidget):
         if self.model is None:
             return
 
-        predicted, = self.model.predict(image.ravel())
+        label_idx, probs = self.model.predict_proba(image.ravel())
+        label_idx, prob = label_idx[0], probs[0][label_idx]
+
         labels = self.existing_labels.stringList()
-        return labels[predicted]
+        return labels[label_idx], prob
 
     def get_training_data(self):
         """Read the images from disk into an n*(w*h) matrix."""
@@ -146,7 +149,6 @@ class MainApp(QWidget):
         # Inspect scree plot to determine appropriate number of PCA components
         projector = PCALDA(pca_components=50).fit(X, y)
         classifier = PCALDAClassifier(projector)
-        projected = projector.project(X)
 
         # Replace the existing running model
         self.model = classifier
@@ -208,9 +210,9 @@ class MainApp(QWidget):
 
             face = gray[y:y + h, x:x + w]
             face = cv2.resize(face, self.image_size)
-            predicted = self.classify_face(face)
+            predicted, prob = self.classify_face(face)
 
-            text = '%s (%.1f%%)' % (predicted.capitalize(), 73.42)
+            text = '%s (%.2f%%)' % (predicted.capitalize(), 100 * prob)
 
             cv2.putText(frame, text, (x, y + h + 15),
                         cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))

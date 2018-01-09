@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 from scipy.spatial import distance
 
@@ -154,11 +156,29 @@ class PCALDAClassifier(Classifier):
         # type: (PCALDA) -> None
         self.pca_lda = pca_lda
 
-    def predict(self, X):
+    def predict(self, X, return_distances=False):
         # Find the nearest class mean to each new sample
         class_means = self.pca_lda.lda.class_means
 
         projected = self.pca_lda.project(np.atleast_2d(X))
 
         distances = distance.cdist(projected, class_means)
-        return np.argmin(distances, axis=1)
+        min_indices = np.argmin(distances, axis=1)
+
+        if return_distances:
+            return min_indices, distances
+        return min_indices
+
+    def predict_proba(self, X):
+        indices, distances = self.predict(X, return_distances=True)
+        # Perform softmax on negative distances because a good distance is a
+        # low distance, and softmax does the inverse
+        probs = softmax(-distances)
+        return indices, probs
+
+
+def softmax(X):
+    X = np.atleast_2d(X)
+    z = np.exp(X - np.max(X, axis=1, keepdims=True))
+    probabilities = z / np.sum(z, axis=1, keepdims=True)
+    return probabilities
