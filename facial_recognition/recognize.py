@@ -1,54 +1,24 @@
 import sys
+from contextlib import contextmanager
 from os import path, mkdir, listdir
 from typing import Optional
 
 import cv2
 import numpy as np
-from PyQt5.QtCore import QSize, QTimer, QStringListModel
+from PyQt5.QtCore import QSize, QTimer, QStringListModel, Qt, \
+    QItemSelectionModel
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
-    QShortcut, QDialog, QVBoxLayout, QListView, QTextEdit, QPushButton
+    QShortcut, QDialog, QVBoxLayout, QListView, QTextEdit, QPushButton, \
+    QLineEdit, QGroupBox
 
 
 class NoFacesError(Exception):
     pass
 
 
-class SpecifyImageLabelDialog(QDialog):
-    def __init__(self, image, existing_labels_model, parent=None):
-        # type: (np.ndarray, QStringListModel, Optional[QWidget]) -> None
-        super().__init__(parent=parent)
-        self.label = None
-
-        self.main_layout = QHBoxLayout()
-        self.setLayout(self.main_layout)
-
-        self.image = QImage(image, image.shape[1], image.shape[0],
-                            image.strides[0], QImage.Format_RGB888)
-        self.image_label = QLabel(self)
-        self.image_label.setFixedSize(QSize(*image.shape))
-        self.image_label.setPixmap(QPixmap.fromImage(self.image))
-        self.main_layout.addWidget(self.image_label)
-
-        self.control_layout = QVBoxLayout()
-        # Setup existing label view
-        self.labels_view = QListView(parent=self)
-        self.labels_view.setModel(existing_labels_model)
-        self.control_layout.addWidget(self.labels_view)
-        self.main_layout.addItem(self.control_layout)
-
-        selection_model = self.labels_view.selectionModel()
-        selection_model.selectionChanged.connect(self._label_changed)
-
-        # Setup input for new labels
-        self.new_label = QTextEdit(self)
-        self.control_layout.addWidget(self.new_label)
-
-        self.add_button = QPushButton('Add', self)
-        self.control_layout.addWidget(self.add_button)
-
-    def _label_changed(self, param):
-        print(param)
+class MultipleFacesError(Exception):
+    pass
 
 
 class MainApp(QWidget):
@@ -67,20 +37,55 @@ class MainApp(QWidget):
         self.detected_faces = []
 
         # Setup the UI
-        self.image_label = QLabel(self)
-        self.image_label.setFixedSize(self.video_size)
-
         self.main_layout = QHBoxLayout()
-        self.main_layout.addWidget(self.image_label)
         self.setLayout(self.main_layout)
 
+        self.control_layout = QVBoxLayout()
+        self.control_layout.setSpacing(8)
+        self.main_layout.addItem(self.control_layout)
+
+        # Setup the info area
+        info_box = QGroupBox('Recognized people', self)
+        info_box_layout = QVBoxLayout()
+        info_box.setLayout(info_box_layout)
+        self.control_layout.addWidget(info_box)
+        self.info_label = QLabel(self)
+        self.info_label.setText('Foobar')
+        info_box_layout.addWidget(self.info_label)
+
+        # Setup the existing label view
+        self.labels_view = QListView(parent=self)
+        self.labels_view.setModel(self.existing_labels)
+        self.labels_view.setSelectionMode(QListView.SingleSelection)
+        self.control_layout.addWidget(self.labels_view)
+
+        selection_model = self.labels_view.selectionModel()
+        # selection_model.selectionChanged.connect(self._label_changed)
+
+        self.new_label_txt = QLineEdit(self)
+        self.control_layout.addWidget(self.new_label_txt)
+
+        self.add_button = QPushButton('Add Label', self)
+        self.add_button.clicked.connect(self.add_new_label)
+        self.control_layout.addWidget(self.add_button)
+
+        self.control_layout.addStretch(0)
+
         # Add take picture shortcut
+        self.take_picture_btn = QPushButton('Take picture', self)
+        self.take_picture_btn.clicked.connect(self.take_picture)
+        self.control_layout.addWidget(self.take_picture_btn)
         shortcut = QShortcut(QKeySequence('Space'), self, self.take_picture)
-        shortcut.setWhatsThis('Take picture to train with.')
+        shortcut.setWhatsThis('Take picture and add to training data.')
 
         # Add quit shortcut
         shortcut = QShortcut(QKeySequence('Esc'), self, self.close)
         shortcut.setWhatsThis('Quit')
+
+        # Setup the main camera area
+        self.image_label = QLabel(self)
+        self.image_label.setFixedSize(self.video_size)
+        self.main_layout.addWidget(self.image_label)
 
         # Setup the camera
         self.capture = cv2.VideoCapture(0)
@@ -90,6 +95,25 @@ class MainApp(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.display_video_stream)
         self.timer.start(int(1000 / self.fps))
+
+    def add_new_label(self):
+        new_label = self.new_label_txt.text()
+        new_label = new_label.lower()
+
+        # Prevent empty entries
+        if len(new_label) < 3:
+            return
+
+        string_list = self.existing_labels.stringList()
+
+        if new_label not in string_list:
+            string_list.append(new_label.capitalize())
+            self.existing_labels.setStringList(string_list)
+
+            # Automatically select the added label
+            selection_model = self.labels_view.selectionModel()
+            index = self.existing_labels.index(len(string_list) - 1)
+            selection_model.setCurrentIndex(index, QItemSelectionModel.Select)
 
     def display_video_stream(self):
         """Read frame from camera and repaint QLabel widget."""
@@ -113,22 +137,42 @@ class MainApp(QWidget):
                        frame.strides[0], QImage.Format_RGB888)
         self.image_label.setPixmap(QPixmap.fromImage(image))
 
+    @contextmanager
+    def stop_camera_feed(self):
+        """Temporarly stop the feed and face detection."""
+        try:
+            self.timer.stop()
+            yield
+        finally:
+            self.timer.start(int(1000 / self.fps))
+
     def take_picture(self):
         # Notify the user there were no faces detected
         if self.detected_faces is None:
             raise NoFacesError()
 
-        self.timer.stop()
-        for x, y, w, h in self.detected_faces:
+        if len(self.detected_faces) > 1:
+            raise MultipleFacesError()
+
+        with self.stop_camera_feed():
+            x, y, w, h = self.detected_faces[0]
+
             face = self.gray_image[y:y + h, x:x + w]
             face = cv2.resize(face, (100, 100))
             denoised_image = cv2.fastNlMeansDenoising(face)
 
-            dialog = SpecifyImageLabelDialog(denoised_image, self.existing_labels)
-            if dialog.exec():
-                self.save_image(denoised_image, 'pavlin')
+            self.save_image(denoised_image, self.selected_label)
 
-        self.timer.start(int(1000 / self.fps))
+    @property
+    def selected_label(self):
+        index = self.labels_view.selectedIndexes()
+        if len(index) < 1:
+            return None
+
+        label = self.existing_labels.data(index[0], Qt.DisplayRole)
+        label = label.lower()
+
+        return label
 
     def get_existing_labels(self):
         """Get a list of the currently existing labels"""
@@ -137,6 +181,8 @@ class MainApp(QWidget):
 
         labels = listdir(self.training_data_dir)
         labels = list(filter(lambda f: '.' not in f, labels))
+        labels = [s.capitalize() for s in labels]
+
         return labels
 
     def save_image(self, image: np.ndarray, label: str) -> None:
