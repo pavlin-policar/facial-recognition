@@ -57,3 +57,40 @@ class PCA(Projection):
 
     def reconstruct(self, X):
         return np.dot(X, self.P.T) + self.X_mean
+
+
+class LDA(Projection):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.eigvecs = None
+        self.P = None
+        self.class_means = None
+
+    def fit(self, X, y):
+        assert X.shape[0] == y.shape[0], 'X and y dimensions do not match.'
+
+        n_classes = np.max(y) + 1
+        n_samples, n_features = X.shape
+
+        # Compute the class means
+        class_means = np.zeros((n_classes, n_features))
+        for idx in range(n_classes):
+            class_means[idx, :] = np.mean(X[y == idx], axis=0)
+
+        mean = np.mean(class_means, axis=0)
+
+        Sw = Sb = 0
+        for i in range(n_classes):
+            for j in X[y == i]:
+                val = np.atleast_2d(j - class_means[i])
+                Sw += np.dot(val.T, val)
+
+            val = np.atleast_2d(class_means[i] - mean)
+            Sb += n_samples * np.dot(val.T, val)
+
+        eigvals, eigvecs = np.linalg.eigh(np.linalg.inv(Sw) * Sb)
+
+        self.eigvecs = eigvecs
+        self.P = eigvecs[:, :self.n_components]
+
+        self.class_means = np.dot(class_means, self.P)

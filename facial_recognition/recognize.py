@@ -11,7 +11,7 @@ from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
-from facial_recognition.model import PCA
+from facial_recognition.model import PCA, LDA
 
 
 class NoFacesError(Exception):
