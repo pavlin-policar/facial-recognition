@@ -1,7 +1,7 @@
 import sys
 from contextlib import contextmanager
 from os import path, mkdir, listdir
-from typing import Optional
+from typing import Optional, Tuple, Dict
 
 import cv2
 import numpy as np
@@ -9,8 +9,9 @@ from PyQt5.QtCore import QSize, QTimer, QStringListModel, Qt, \
     QItemSelectionModel
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
-    QShortcut, QDialog, QVBoxLayout, QListView, QTextEdit, QPushButton, \
-    QLineEdit, QGroupBox
+    QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
+
+from facial_recognition.model import PCA
 
 
 class NoFacesError(Exception):
@@ -46,6 +47,7 @@ class MainApp(QWidget):
 
         self.fps = fps
         self.video_size = QSize(640, 480)
+        self.image_size = (100, 100)
 
         self.gray_image = None
         self.detected_faces = []
@@ -83,6 +85,15 @@ class MainApp(QWidget):
         self.add_button.clicked.connect(self.add_new_label)
         self.control_layout.addWidget(self.add_button)
 
+        # Setup the training area
+        train_box = QGroupBox('Train', self)
+        train_box_layout = QVBoxLayout()
+        train_box.setLayout(train_box_layout)
+        self.control_layout.addWidget(train_box)
+        self.train_btn = QPushButton('Train', self)
+        self.train_btn.clicked.connect(self.train)
+        train_box_layout.addWidget(self.train_btn)
+
         self.control_layout.addStretch(0)
 
         # Add take picture shortcut
@@ -109,6 +120,41 @@ class MainApp(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.display_video_stream)
         self.timer.start(int(1000 / self.fps))
+
+    def get_training_data(self):
+        # type: () -> Tuple[np.ndarray, np.ndarray, Dict[int, str]]
+        """Read the images from disk into an n*(w*h) matrix."""
+        labels = self.get_existing_labels()
+
+        matrices, ys, label_mapping = [], [], {}
+
+        for idx, label in enumerate(labels):
+            label_mapping[idx] = label
+
+            label = label
+            dir_path = path.join(self.training_data_dir, label)
+            files = listdir(dir_path)
+
+            ys.append(idx * np.ones(len(files), dtype=int))
+
+            im_matrix = np.zeros((len(files), np.prod(self.image_size)))
+            for idx, im_file in enumerate(files):
+                im_path = path.join(dir_path, im_file)
+                image = cv2.imread(im_path, cv2.IMREAD_GRAYSCALE)
+                im_matrix[idx, :] = np.ravel(image)
+
+            matrices.append(im_matrix)
+
+        return np.vstack(matrices), np.hstack(ys), label_mapping
+
+    def train(self):
+        X, y, mapping = self.get_training_data()
+        pca = PCA().fit(X)
+        projected = pca.project(X)
+
+        import matplotlib.pyplot as plt
+        plt.plot(projected[:, 0], projected[:, 1], 'ro')
+        plt.show()
 
     def add_new_label(self):
         new_label = self.new_label_txt.text()
@@ -172,7 +218,7 @@ class MainApp(QWidget):
             x, y, w, h = self.detected_faces[0]
 
             face = self.gray_image[y:y + h, x:x + w]
-            face = cv2.resize(face, (100, 100))
+            face = cv2.resize(face, self.image_size)
             denoised_image = cv2.fastNlMeansDenoising(face)
 
             if not self.selected_label:
