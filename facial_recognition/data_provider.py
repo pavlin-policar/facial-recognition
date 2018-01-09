@@ -1,4 +1,5 @@
-from os import path, listdir
+from os import path, listdir, mkdir
+import pickle
 
 import cv2
 import numpy as np
@@ -45,3 +46,21 @@ def get_image_data_from_directory(directory):
         matrices.append(im_matrix)
 
     return np.vstack(matrices), np.hstack(ys), label_mapping
+
+
+def load_model(fname):
+    """Load the trained model from disk."""
+    assert path.exists(fname), 'Model does not exist. Train a model first'
+
+    with open(fname, 'rb') as file_handle:
+        return pickle.load(file_handle)
+
+
+def save_model(model, fname):
+    """Save the trained model to disk."""
+    model_directory = path.dirname(fname)
+    if not path.exists(model_directory):
+        mkdir(model_directory)
+
+    with open(fname, 'wb') as file_handle:
+        pickle.dump(model, file_handle)

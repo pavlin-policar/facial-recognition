@@ -152,21 +152,13 @@ class MainApp(QWidget):
 
     def save_model(self, model):
         """Save the trained model to disk."""
-        if not path.exists(self.models_dir):
-            mkdir(self.models_dir)
-
-        model_fname = path.join(self.models_dir, self.model_fname)
-        with open(model_fname, 'wb') as file_handle:
-            pickle.dump(model, file_handle)
+        data_provider.save_model(
+            model, path.join(self.models_dir, self.model_fname))
 
     def load_model(self):
         """Load the trained model from disk."""
-        model_fname = path.join(self.models_dir, self.model_fname)
-        assert path.exists(model_fname), \
-            'Model does not exist. Train a model first'
-
-        with open(model_fname, 'rb') as file_handle:
-            return pickle.load(file_handle)
+        return data_provider.load_model(
+            path.join(self.models_dir, self.model_fname))
 
     def add_new_label(self):
         new_label = self.new_label_txt.text()
