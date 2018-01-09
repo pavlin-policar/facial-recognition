@@ -19,7 +19,7 @@ class PCA(Projection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.X_mean = None
-        self.U = None
+        self.subspace_basis = None
         self.P = None
 
     def fit(self, X, y=None):
@@ -43,7 +43,7 @@ class PCA(Projection):
         if use_dual_pca:
             U = X.dot(U).dot(np.diag(1 / np.sqrt(S * (X.shape[0] - 1))))
 
-        self.U = U
+        self.subspace_basis = U
         self.P = U[:, :self.n_components]
 
         return self
@@ -62,7 +62,7 @@ class PCA(Projection):
 class LDA(Projection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.eigvecs = None
+        self.subspace_basis = None
         self.P = None
         self.class_means = None
 
@@ -90,7 +90,7 @@ class LDA(Projection):
 
         eigvals, eigvecs = np.linalg.eigh(np.linalg.inv(Sw) * Sb)
 
-        self.eigvecs = eigvecs
+        self.subspace_basis = eigvecs
         self.P = eigvecs[:, :self.n_components]
 
         self.class_means = np.dot(class_means, self.P)
