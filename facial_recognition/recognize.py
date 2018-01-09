@@ -70,15 +70,6 @@ class MainApp(QWidget):
         self.control_layout.setSpacing(8)
         self.main_layout.addItem(self.control_layout)
 
-        # Setup the info area
-        info_box = QGroupBox('Recognized people', self)
-        info_box_layout = QVBoxLayout()
-        info_box.setLayout(info_box_layout)
-        self.control_layout.addWidget(info_box)
-        self.info_label = QLabel(self)
-        self.info_label.setText('Foobar')
-        info_box_layout.addWidget(self.info_label)
-
         # Setup the existing label view
         self.labels_view = QListView(parent=self)
         self.labels_view.setModel(self.existing_labels)
@@ -132,11 +123,11 @@ class MainApp(QWidget):
         if self.model is None:
             return
 
-        label_idx, probs = self.model.predict_proba(image.ravel())
-        label_idx, prob = label_idx[0], probs[0][label_idx]
+        label_idx, distances = self.model.predict(image.ravel(), True)
+        label_idx, distance = label_idx[0], distances[0][label_idx]
 
         labels = self.existing_labels.stringList()
-        return labels[label_idx], prob
+        return labels[label_idx], distance
 
     def get_training_data(self):
         """Read the images from disk into an n*(w*h) matrix."""
@@ -205,14 +196,15 @@ class MainApp(QWidget):
 
         self.detected_faces = face_cascade.detectMultiScale(gray, 1.3, 5)
         for x, y, w, h in self.detected_faces:
+            # Draw a rectangle around the detected face
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
+            # Label the detected face as per the model
             face = gray[y:y + h, x:x + w]
             face = cv2.resize(face, self.image_size)
-            predicted, prob = self.classify_face(face)
+            predicted, distance = self.classify_face(face)
 
-            text = '%s (%.2f%%)' % (predicted.capitalize(), 100 * prob)
-
+            text = '%s (%.1f)' % (predicted.capitalize(), distance)
             cv2.putText(frame, text, (x, y + h + 15),
                         cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
 
