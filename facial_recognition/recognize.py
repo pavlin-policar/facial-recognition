@@ -50,7 +50,8 @@ class MainApp(QWidget):
         self.model_fname = 'fisherfaces.p'
 
         try:
-            self.model = self.load_model()
+            self.model = data_provider.load_model(
+                path.join(self.models_dir, self.model_fname))
         except AssertionError:
             self.model = None
 
@@ -141,24 +142,15 @@ class MainApp(QWidget):
     def train(self):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
-        projector = PCALDA(n_components=2, pca_components=300).fit(X, y)
+        projector = PCALDA(n_components=2, pca_components=500).fit(X, y)
         classifier = PCALDAClassifier(projector)
 
         # Replace the existing running model
         self.model = classifier
 
         # Save the classifier to file
-        self.save_model(classifier)
-
-    def save_model(self, model):
-        """Save the trained model to disk."""
         data_provider.save_model(
-            model, path.join(self.models_dir, self.model_fname))
-
-    def load_model(self):
-        """Load the trained model from disk."""
-        return data_provider.load_model(
-            path.join(self.models_dir, self.model_fname))
+            classifier, path.join(self.models_dir, self.model_fname))
 
     def add_new_label(self):
         new_label = self.new_label_txt.text()
