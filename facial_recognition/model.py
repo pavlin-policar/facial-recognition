@@ -49,7 +49,7 @@ class PCA(Projection):
         return self
 
     def project(self, X):
-        assert self.X_mean is not None, \
+        assert self.P is not None, \
             'You must fit PCA before you can project'
 
         X -= self.X_mean
@@ -94,3 +94,14 @@ class LDA(Projection):
         self.P = eigvecs[:, :self.n_components]
 
         self.class_means = np.dot(class_means, self.P)
+
+        return self
+
+    def project(self, X):
+        assert self.P is not None, \
+            'You must fit LDA before you can project'
+
+        return np.dot(X, self.P)
+
+    def reconstruct(self, X):
+        np.dot(X, self.P.T)

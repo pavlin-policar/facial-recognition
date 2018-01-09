@@ -149,8 +149,11 @@ class MainApp(QWidget):
 
     def train(self):
         X, y, mapping = self.get_training_data()
-        pca = PCA().fit(X)
+        pca = PCA(n_components=4).fit(X)
         projected = pca.project(X)
+
+        lda = LDA().fit(projected, y)
+        projected = lda.project(projected)
 
         import matplotlib.pyplot as plt
         plt.plot(projected[:, 0], projected[:, 1], 'ro')
