@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
 from facial_recognition import plotting
-from facial_recognition.model import PCA, LDA
+from facial_recognition.model import PCA, LDA, PCALDA
 
 
 class NoFacesError(Exception):
@@ -150,13 +150,9 @@ class MainApp(QWidget):
 
     def train(self):
         X, y, mapping = self.get_training_data()
-        # Inspect scree plot to determine appropriate number of components
-        pca = PCA(n_components=20).fit(X)
-        projected = pca.project(X)
-
-        # Use LDA for a classification
-        lda = LDA().fit(projected, y)
-        projected = lda.project(projected)
+        # Inspect scree plot to determine appropriate number of PCA components
+        projector = PCALDA(pca_components=25).fit(X, y)
+        projected = projector.project(X)
         plotting.scatter(projected, y, mapping)
 
     def add_new_label(self):

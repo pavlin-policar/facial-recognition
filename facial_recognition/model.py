@@ -112,3 +112,24 @@ class LDA(Projection):
     def reconstruct(self, X):
         self._check_fitted()
         np.dot(X, self.P.T)
+
+
+class PCALDA(Projection):
+    def __init__(self, pca_components=25, n_components=2):
+        super().__init__(n_components)
+        self.pca_components = pca_components
+        self.pca = None
+        self.lda = None
+
+    def fit(self, X, y):
+        self.pca = PCA(n_components=self.pca_components).fit(X)
+        projected = self.pca.project(X)
+        self.lda = LDA(n_components=self.n_components).fit(projected, y)
+
+        self.subspace_basis = np.dot(self.pca.P, self.lda.P)
+
+        return self
+
+    def project(self, X):
+        self._check_fitted()
+        return np.dot(X - self.pca.X_mean, self.subspace_basis)
