@@ -83,21 +83,26 @@ class LDA(Projection):
 
         # Compute the class means
         class_means = np.zeros((n_classes, n_features))
-        for idx in range(n_classes):
-            class_means[idx, :] = np.mean(X[y == idx], axis=0)
+        for i in range(n_classes):
+            class_means[i, :] = np.mean(X[y == i], axis=0)
 
         mean = np.mean(class_means, axis=0)
 
         Sw = Sb = 0
         for i in range(n_classes):
+            # Compute the within class scatter matrix
             for j in X[y == i]:
                 val = np.atleast_2d(j - class_means[i])
                 Sw += np.dot(val.T, val)
 
+            # Compute the between class scatter matrix
             val = np.atleast_2d(class_means[i] - mean)
             Sb += n_samples * np.dot(val.T, val)
 
-        eigvals, eigvecs = np.linalg.eigh(np.linalg.inv(Sw) * Sb)
+        # Get the eigenvalues and eigenvectors in ascending order
+        eigvals, eigvecs = np.linalg.eigh(np.dot(np.linalg.inv(Sw), Sb))
+        sorted_idx = np.argsort(eigvals)[::-1]
+        eigvals, eigvecs = eigvals[sorted_idx], eigvecs[:, sorted_idx]
 
         self.subspace_basis = eigvecs
         self.eigenvalues = eigvals
