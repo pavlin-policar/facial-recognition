@@ -12,7 +12,8 @@ from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
-from facial_recognition.model import PCALDA, PCALDAClassifier
+from facial_recognition import plotting, data_provider
+from facial_recognition.model import PCALDA, PCALDAClassifier, PCA
 
 
 class NoFacesError(Exception):
@@ -78,9 +79,6 @@ class MainApp(QWidget):
         self.labels_view.setSelectionMode(QListView.SingleSelection)
         self.control_layout.addWidget(self.labels_view)
 
-        selection_model = self.labels_view.selectionModel()
-        # selection_model.selectionChanged.connect(self._label_changed)
-
         self.new_label_txt = QLineEdit(self)
         self.control_layout.addWidget(self.new_label_txt)
 
@@ -125,39 +123,21 @@ class MainApp(QWidget):
         self.timer.start(int(1000 / self.fps))
 
     def get_training_data(self):
-        # type: () -> Tuple[np.ndarray, np.ndarray, Dict[int, str]]
         """Read the images from disk into an n*(w*h) matrix."""
-        labels = self.get_existing_labels()
-
-        matrices, ys, label_mapping = [], [], {}
-
-        for idx, label in enumerate(labels):
-            label_mapping[idx] = label
-
-            label = label
-            dir_path = path.join(self.training_data_dir, label)
-            files = listdir(dir_path)
-
-            ys.append(idx * np.ones(len(files), dtype=int))
-
-            im_matrix = np.zeros((len(files), np.prod(self.image_size)))
-            for idx, im_file in enumerate(files):
-                im_path = path.join(dir_path, im_file)
-                image = cv2.imread(im_path, cv2.IMREAD_GRAYSCALE)
-                im_matrix[idx, :] = np.ravel(image)
-
-            matrices.append(im_matrix)
-
-        return np.vstack(matrices), np.hstack(ys), label_mapping
+        return data_provider.get_image_data_from_directory(
+            self.training_data_dir)
 
     def train(self):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
-        projector = PCALDA(pca_components=25).fit(X, y)
-        classifier = PCALDAClassifier(projector)
+        projector = PCA().fit(X)
+        # classifier = PCALDAClassifier(projector)
+        # plotting.explained_variance(classifier.pca_lda.pca)
+        projected = projector.project(X)
+        plotting.scatter(projected, y, mapping)
 
         # Save the classifier to file
-        self.save_model(classifier)
+        # self.save_model(classifier)
 
     def save_model(self, model):
         """Save the trained model to disk."""
@@ -210,7 +190,7 @@ class MainApp(QWidget):
         self.detected_faces = face_cascade.detectMultiScale(gray, 1.3, 5)
         for x, y, w, h in self.detected_faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
-            cv2.putText(frame, 'Pavlin 74.5%', (x, y + h + 15),
+            cv2.putText(frame, 'Barbara 74.5%', (x, y + h + 15),
                         cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
 
         # Display the image in the image area
@@ -229,10 +209,12 @@ class MainApp(QWidget):
 
     def take_picture(self):
         # Notify the user there were no faces detected
-        if self.detected_faces is None:
+        if self.detected_faces is None or len(self.detected_faces) < 1:
+            return
             raise NoFacesError()
 
         if len(self.detected_faces) > 1:
+            return
             raise MultipleFacesError()
 
         with self.stop_camera_feed():
@@ -259,13 +241,7 @@ class MainApp(QWidget):
 
     def get_existing_labels(self):
         """Get a list of the currently existing labels"""
-        if not path.exists(self.training_data_dir):
-            return []
-
-        labels = listdir(self.training_data_dir)
-        labels = list(filter(lambda f: '.' not in f, labels))
-
-        return labels
+        return data_provider.get_folder_names(self.training_data_dir)
 
     def save_image(self, image: np.ndarray, label: str) -> None:
         """Save an image to disk in the appropriate directory."""
