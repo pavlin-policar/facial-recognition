@@ -11,6 +11,7 @@ from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
+from facial_recognition import plotting
 from facial_recognition.model import PCA, LDA
 
 
@@ -149,15 +150,14 @@ class MainApp(QWidget):
 
     def train(self):
         X, y, mapping = self.get_training_data()
-        pca = PCA(n_components=4).fit(X)
+        # Inspect scree plot to determine appropriate number of components
+        pca = PCA(n_components=20).fit(X)
         projected = pca.project(X)
 
+        # Use LDA for a classification
         lda = LDA().fit(projected, y)
         projected = lda.project(projected)
-
-        import matplotlib.pyplot as plt
-        plt.plot(projected[:, 0], projected[:, 1], 'ro')
-        plt.show()
+        plotting.scatter(projected, y, mapping)
 
     def add_new_label(self):
         new_label = self.new_label_txt.text()

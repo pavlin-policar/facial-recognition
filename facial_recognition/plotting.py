@@ -1,3 +1,5 @@
+from typing import Optional, Dict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -18,5 +20,22 @@ def explained_variance(pca):
     plt.title('PCA explained variance')
     plt.plot(x, pca.eigenvalues / sum_eigs, label='Eigenvalues')
     plt.plot(x, explained_var, label='Explained variance')
+    plt.legend()
+    plt.show()
+
+
+def scatter(X, y, mapping=None):
+    # type: (np.ndarray, np.ndarray, Optional[Dict[int, str]]) -> None
+    """Plot the data points according to their class label."""
+    assert X.ndim == 2, 'X can not have more than 2 dimensions'
+    assert X.shape[0] == y.shape[0], 'X and y do not match in dim 0'
+
+    n_classes = np.max(y) + 1
+
+    for i in range(n_classes):
+        class_samples = X[y == i]
+        label = mapping[i] if mapping else i
+        plt.plot(class_samples[:, 0], class_samples[:, 1], 'o', label=label)
+
     plt.legend()
     plt.show()
