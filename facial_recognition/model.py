@@ -15,8 +15,14 @@ class Projection:
     def reconstruct(self, X):
         """Reconstruct the projected data back into the original space."""
 
+    def _check_fitted(self):
+        """Check that the projector has been fitted."""
+        assert self.subspace_basis is not None, \
+            'You must fit %s before you can project' % self.__class__.__name__
+
     @property
     def P(self):
+        self._check_fitted()
         return self.subspace_basis[:, :self.n_components]
 
 
@@ -25,7 +31,6 @@ class PCA(Projection):
         super().__init__(*args, **kwargs)
         self.X_mean = None
         self.eigenvalues = None
-        self.P = None
 
     def fit(self, X, y=None):
         assert X.ndim == 2, 'X can only be a 2-d matrix'
@@ -54,13 +59,12 @@ class PCA(Projection):
         return self
 
     def project(self, X):
-        assert self.P is not None, \
-            'You must fit PCA before you can project'
-
+        self._check_fitted()
         X -= self.X_mean
         return np.dot(X, self.P)
 
     def reconstruct(self, X):
+        self._check_fitted()
         return np.dot(X, self.P.T) + self.X_mean
 
 
@@ -68,7 +72,6 @@ class LDA(Projection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.eigenvalues = None
-        self.P = None
         self.class_means = None
 
     def fit(self, X, y):
@@ -103,10 +106,9 @@ class LDA(Projection):
         return self
 
     def project(self, X):
-        assert self.P is not None, \
-            'You must fit LDA before you can project'
-
+        self._check_fitted()
         return np.dot(X, self.P)
 
     def reconstruct(self, X):
+        self._check_fitted()
         np.dot(X, self.P.T)
