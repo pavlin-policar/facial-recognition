@@ -10,7 +10,8 @@ from PyQt5.QtCore import QSize, QTimer, QStringListModel, Qt, \
     QItemSelectionModel
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
-    QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
+    QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox, \
+    QStyledItemDelegate
 
 from facial_recognition import data_provider
 from facial_recognition.model import PCALDA, PCALDAClassifier
@@ -24,17 +25,10 @@ class MultipleFacesError(Exception):
     pass
 
 
-class CapitalizedStringListModel(QStringListModel):
-    def data(self, index, role):
-        result = super().data(index, role)
-
-        if role == Qt.UserRole:
-            result = super().data(index, Qt.DisplayRole)
-
-        if result and role == Qt.DisplayRole:
-            result = result.capitalize()
-
-        return result
+class CapitalizeDelegate(QStyledItemDelegate):
+    def displayText(self, value, locale):
+        string = super().displayText(value, locale)
+        return string.capitalize()
 
 
 class MainApp(QWidget):
@@ -56,8 +50,7 @@ class MainApp(QWidget):
         except AssertionError:
             self.model = None
 
-        self.existing_labels = CapitalizedStringListModel(
-            self.get_existing_labels())
+        self.existing_labels = QStringListModel(self.get_existing_labels())
 
         self.fps = fps
         self.video_size = QSize(640, 480)
@@ -77,6 +70,7 @@ class MainApp(QWidget):
         self.labels_view = QListView(parent=self)
         self.labels_view.setModel(self.existing_labels)
         self.labels_view.setSelectionMode(QListView.SingleSelection)
+        self.labels_view.setItemDelegate(CapitalizeDelegate(self))
         self.control_layout.addWidget(self.labels_view)
 
         self.new_label_txt = QLineEdit(self)
