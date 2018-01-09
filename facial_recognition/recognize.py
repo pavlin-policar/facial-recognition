@@ -47,7 +47,7 @@ class MainApp(QWidget):
         self.pkg_path = path.dirname(path.dirname(path.abspath(__file__)))
         self.training_data_dir = path.join(self.pkg_path, 'train')
         self.models_dir = path.join(self.pkg_path, 'models')
-        self.model_fname = 'active.p'
+        self.model_fname = 'fisherfaces.p'
 
         try:
             self.model = self.load_model()
