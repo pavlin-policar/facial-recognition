@@ -153,7 +153,6 @@ class MainApp(QWidget):
         # Inspect scree plot to determine appropriate number of PCA components
         projector = PCALDA(pca_components=25).fit(X, y)
         projected = projector.project(X)
-        plotting.scatter(projected, y, mapping)
 
     def add_new_label(self):
         new_label = self.new_label_txt.text()

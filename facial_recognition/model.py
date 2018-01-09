@@ -133,3 +133,6 @@ class PCALDA(Projection):
     def project(self, X):
         self._check_fitted()
         return np.dot(X - self.pca.X_mean, self.subspace_basis)
+
+    def reconstruct(self, X):
+        return X.dot(self.lda.P.T).dot(self.pca.P.T) + self.pca.X_mean
