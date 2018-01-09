@@ -38,7 +38,7 @@ class CapitalizedStringListModel(QStringListModel):
 
 
 class MainApp(QWidget):
-    STRANGER_DANGER = 250
+    STRANGER_DANGER = 0.5
 
     def __init__(self, fps=30, parent=None):
         # type: (int, Optional[QWidget]) -> None
@@ -141,7 +141,7 @@ class MainApp(QWidget):
     def train(self):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
-        projector = PCALDA(pca_components=300).fit(X, y)
+        projector = PCALDA(n_components=2, pca_components=300).fit(X, y)
         classifier = PCALDAClassifier(projector)
 
         # Replace the existing running model

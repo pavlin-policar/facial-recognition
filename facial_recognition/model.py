@@ -160,7 +160,7 @@ class PCALDAClassifier(Classifier):
 
         projected = self.pca_lda.project(np.atleast_2d(X))
 
-        distances = distance.cdist(projected, class_means)
+        distances = distance.cdist(projected, class_means, metric='cosine')
         min_indices = np.argmin(distances, axis=1)
 
         if return_distances:
