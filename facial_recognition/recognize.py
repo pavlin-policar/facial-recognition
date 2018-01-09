@@ -2,7 +2,7 @@ import pickle
 import sys
 from contextlib import contextmanager
 from os import path, mkdir, listdir
-from typing import Optional, Tuple, Dict
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -12,9 +12,8 @@ from PyQt5.QtGui import QImage, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QShortcut, QVBoxLayout, QListView, QPushButton, QLineEdit, QGroupBox
 
-from facial_recognition import plotting, data_provider
-from facial_recognition.model import PCALDA, PCALDAClassifier, PCA, LDA, \
-    softmax
+from facial_recognition import data_provider
+from facial_recognition.model import PCALDA, PCALDAClassifier
 
 
 class NoFacesError(Exception):
