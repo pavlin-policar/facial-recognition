@@ -10,6 +10,7 @@ def get_folder_names(directory):
 
     labels = listdir(directory)
     labels = list(filter(lambda f: '.' not in f, labels))
+    labels = sorted(labels)
 
     return labels
 

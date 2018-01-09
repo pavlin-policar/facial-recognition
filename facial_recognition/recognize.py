@@ -79,6 +79,8 @@ class MainApp(QWidget):
         self.control_layout.addWidget(self.labels_view)
 
         self.new_label_txt = QLineEdit(self)
+        self.new_label_txt.returnPressed.connect(self.add_new_label)
+        self.new_label_txt.returnPressed.connect(self.new_label_txt.clear)
         self.control_layout.addWidget(self.new_label_txt)
 
         self.add_button = QPushButton('Add Label', self)
@@ -178,11 +180,12 @@ class MainApp(QWidget):
 
         if new_label not in string_list:
             string_list.append(new_label)
+            string_list.sort()
             self.existing_labels.setStringList(string_list)
 
             # Automatically select the added label
             selection_model = self.labels_view.selectionModel()
-            index = self.existing_labels.index(len(string_list) - 1)
+            index = self.existing_labels.index(string_list.index(new_label))
             selection_model.setCurrentIndex(index, QItemSelectionModel.Select)
 
     def display_video_stream(self):
@@ -281,8 +284,8 @@ class MainApp(QWidget):
 
         fname = path.join(label_path, '%03d.png' % (last_fname + 1))
         cv2.imwrite(fname, image)
-        
-        
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     win = MainApp()
