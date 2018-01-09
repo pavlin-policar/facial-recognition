@@ -88,7 +88,7 @@ class LDA(Projection):
 
         mean = np.mean(class_means, axis=0)
 
-        Sw = Sb = 0
+        Sw, Sb = 0, 0
         for i in range(n_classes):
             # Compute the within class scatter matrix
             for j in X[y == i]:
@@ -100,7 +100,7 @@ class LDA(Projection):
             Sb += n_samples * np.dot(val.T, val)
 
         # Get the eigenvalues and eigenvectors in ascending order
-        eigvals, eigvecs = np.linalg.eigh(np.dot(np.linalg.inv(Sw), Sb))
+        eigvals, eigvecs = np.linalg.eig(np.dot(np.linalg.inv(Sw), Sb))
         sorted_idx = np.argsort(eigvals)[::-1]
         eigvals, eigvecs = eigvals[sorted_idx], eigvecs[:, sorted_idx]
 
