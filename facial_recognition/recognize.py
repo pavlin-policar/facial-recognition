@@ -38,6 +38,8 @@ class CapitalizedStringListModel(QStringListModel):
 
 
 class MainApp(QWidget):
+    STRANGER_DANGER = 250
+
     def __init__(self, fps=30, parent=None):
         # type: (int, Optional[QWidget]) -> None
         super().__init__(parent=parent)
@@ -137,7 +139,7 @@ class MainApp(QWidget):
     def train(self):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
-        projector = PCALDA(pca_components=50).fit(X, y)
+        projector = PCALDA(pca_components=300).fit(X, y)
         classifier = PCALDAClassifier(projector)
 
         # Replace the existing running model
@@ -204,7 +206,12 @@ class MainApp(QWidget):
             face = cv2.resize(face, self.image_size)
             predicted, distance = self.classify_face(face)
 
-            text = '%s (%.1f)' % (predicted.capitalize(), distance)
+            if distance > self.STRANGER_DANGER:
+                predicted = 'Stranger danger!'
+            else:
+                predicted = predicted.capitalize()
+
+            text = '%s (%.1f)' % (predicted, distance)
             cv2.putText(frame, text, (x, y + h + 15),
                         cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
 
