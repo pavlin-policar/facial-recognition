@@ -38,7 +38,7 @@ class PCA(Projection):
 
         # Center the data
         self.X_mean = np.mean(X, axis=0)
-        X -= self.X_mean
+        X = X - self.X_mean
 
         # If the d >> n then we should use dual PCA for efficiency
         use_dual_pca = X.shape[1] > X.shape[0]
@@ -61,7 +61,7 @@ class PCA(Projection):
 
     def project(self, X):
         self._check_fitted()
-        X -= self.X_mean
+        X = X - self.X_mean
         return np.dot(X, self.P)
 
     def reconstruct(self, X):
