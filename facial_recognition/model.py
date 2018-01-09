@@ -112,7 +112,7 @@ class LDA(Projection):
 
     def reconstruct(self, X):
         self._check_fitted()
-        np.dot(X, self.P.T)
+        return np.dot(X, self.P.T)
 
 
 class PCALDA(Projection):
