@@ -4,6 +4,7 @@ import numpy as np
 class Projection:
     def __init__(self, n_components=2):
         self.n_components = n_components
+        self.subspace_basis = None
 
     def fit(self, X, y):
         """Fit the projection onto the training data."""
@@ -14,12 +15,16 @@ class Projection:
     def reconstruct(self, X):
         """Reconstruct the projected data back into the original space."""
 
+    @property
+    def P(self):
+        return self.subspace_basis[:, :self.n_components]
+
 
 class PCA(Projection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.X_mean = None
-        self.subspace_basis = None
+        self.eigenvalues = None
         self.P = None
 
     def fit(self, X, y=None):
@@ -44,7 +49,7 @@ class PCA(Projection):
             U = X.dot(U).dot(np.diag(1 / np.sqrt(S * (X.shape[0] - 1))))
 
         self.subspace_basis = U
-        self.P = U[:, :self.n_components]
+        self.eigenvalues = S
 
         return self
 
@@ -62,7 +67,7 @@ class PCA(Projection):
 class LDA(Projection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.subspace_basis = None
+        self.eigenvalues = None
         self.P = None
         self.class_means = None
 
@@ -91,7 +96,7 @@ class LDA(Projection):
         eigvals, eigvecs = np.linalg.eigh(np.linalg.inv(Sw) * Sb)
 
         self.subspace_basis = eigvecs
-        self.P = eigvecs[:, :self.n_components]
+        self.eigenvalues = eigvals
 
         self.class_means = np.dot(class_means, self.P)
 
