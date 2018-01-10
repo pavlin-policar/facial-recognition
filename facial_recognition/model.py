@@ -71,10 +71,11 @@ class PCA(Projection):
 
 
 class LDA(Projection):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, auto_components=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.eigenvalues = None
         self.class_means = None
+        self.auto_components = auto_components
 
     def fit(self, X, y):
         assert X.shape[0] == y.shape[0], 'X and y dimensions do not match.'
@@ -82,9 +83,12 @@ class LDA(Projection):
         n_classes = np.max(y) + 1
         n_samples, n_features = X.shape
 
-        assert self.n_components <= n_classes, \
-            'LDA has (c - 1) non-zero eigenvalues. ' \
-            'Please change n_components to <= '
+        if self.auto_components:
+            self.n_components = n_classes - 1
+        else:
+            assert self.n_components <= n_classes, \
+                'LDA has (c - 1) non-zero eigenvalues. ' \
+                'Please change n_components to <= '
 
         # Compute the class means
         class_means = np.zeros((n_classes, n_features))

@@ -12,7 +12,7 @@ def show_scatter(model_fname, images_dir):
     X, y, mapping = data_provider.get_image_data_from_directory(images_dir)
 
     projection = model.pca_lda.project(X)
-    plotting.scatter(projection, y, mapping)
+    plotting.scatter(projection[:, [0, 1]], y, mapping)
 
 
 def train_pca_lda(images_dir):
@@ -49,12 +49,12 @@ def cross_validate(images_dir, k_splits=5):
 
     models = {
         'pca_lda': PCALDAClassifier(
-            n_components=2, pca_components=200, metric='euclidean',
+            n_components=3, pca_components=200, metric='euclidean',
         ),
         'softmax': Softmax(pca_components=200, penalty='l2', C=0.01),
     }
 
-    clf = models['softmax']
+    clf = models['pca_lda']
 
     scores = []
     kfold = StratifiedKFold(n_splits=k_splits, shuffle=True)
