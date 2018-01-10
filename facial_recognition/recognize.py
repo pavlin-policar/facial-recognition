@@ -31,7 +31,7 @@ class CapitalizeDelegate(QStyledItemDelegate):
 
 
 class MainApp(QWidget):
-    STRANGER_DANGER = 250
+    STRANGER_DANGER = 350
     IMAGE_SIZE = (100, 100)
 
     stranger_color = (179, 20, 20)
