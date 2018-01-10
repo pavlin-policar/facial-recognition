@@ -1,4 +1,3 @@
-import pickle
 import sys
 from contextlib import contextmanager
 from os import path, mkdir, listdir
@@ -14,7 +13,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout, \
     QStyledItemDelegate
 
 from facial_recognition import data_provider
-from facial_recognition.model import PCALDA, PCALDAClassifier
+from facial_recognition.model import PCALDAClassifier
 
 
 class NoFacesError(Exception):

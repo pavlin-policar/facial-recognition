@@ -1,12 +1,10 @@
 import fire
-import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 
 from facial_recognition import data_provider, plotting
 from facial_recognition.model import PCALDA, PCA, PCALDAClassifier, Softmax
-from facial_recognition.recognize import MainApp
 
 
 def show_scatter(model_fname, images_dir):
