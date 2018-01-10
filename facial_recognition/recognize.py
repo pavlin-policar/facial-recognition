@@ -252,7 +252,7 @@ class MainApp(QWidget):
         if len(index) < 1:
             return None
 
-        label = self.existing_labels.data(index[0], Qt.UserRole)
+        label = self.existing_labels.data(index[0], Qt.DisplayRole)
 
         return label
 
