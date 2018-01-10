@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import distance
+from sklearn.linear_model import LogisticRegression
 
 
 class Projection:
@@ -149,6 +150,9 @@ class PCALDA(Projection):
 
 
 class Classifier:
+    def fit(self, X, y):
+        """Fit the model on the given data."""
+
     def predict(self, X):
         """Return the labels for the given data."""
 
@@ -190,6 +194,34 @@ class PCALDAClassifier(Classifier):
         # low distance, and softmax does the inverse
         probs = softmax(-distances)
         return indices, probs
+
+
+class Softmax(Classifier):
+    def __init__(self, pca_components=50, penalty='l2', C=1.):
+        self.pca_components = pca_components
+        self.penalty = penalty
+        self.C = C
+        self.pca = None
+        self.softmax = None
+
+    def fit(self, X, y):
+        self.pca = PCA(n_components=self.pca_components)
+        self.softmax = LogisticRegression(
+            multi_class='multinomial', solver='lbfgs', max_iter=500,
+            penalty=self.penalty, C=self.C,
+        )
+
+        self.pca.fit(X)
+        projected = self.pca.project(X)
+
+        self.softmax.fit(projected, y)
+
+        return self
+
+    def predict(self, X):
+        projected = self.pca.project(X)
+        predicted = self.softmax.predict(projected)
+        return predicted
 
 
 def softmax(X):

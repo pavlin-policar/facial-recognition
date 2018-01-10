@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 
 from facial_recognition import data_provider, plotting
-from facial_recognition.model import PCALDA, PCA, PCALDAClassifier
+from facial_recognition.model import PCALDA, PCA, PCALDAClassifier, Softmax
 from facial_recognition.recognize import MainApp
 
 
@@ -41,10 +41,22 @@ def show_pca_eigv(model_fname, start=0, rows=3, cols=4):
 
 
 def cross_validate(images_dir, k_splits=5):
+    """Cross validate the model and check their classificaiton accuracy.
+
+    Note that most images are highly correlated and this will not give a good
+    estimate of how the model will extrapolate.
+
+    """
     X, y, mapping = data_provider.get_image_data_from_directory(images_dir)
-    clf = PCALDAClassifier(
-        n_components=2, pca_components=200, metric='euclidean',
-    ).fit(X, y)
+
+    models = {
+        'pca_lda': PCALDAClassifier(
+            n_components=2, pca_components=200, metric='euclidean',
+        ),
+        'softmax': Softmax(pca_components=200, penalty='l2', C=0.01),
+    }
+
+    clf = models['softmax']
 
     scores = []
     kfold = StratifiedKFold(n_splits=k_splits, shuffle=True)
