@@ -81,6 +81,10 @@ class LDA(Projection):
         n_classes = np.max(y) + 1
         n_samples, n_features = X.shape
 
+        assert self.n_components <= n_classes, \
+            'LDA has (c - 1) non-zero eigenvalues. ' \
+            'Please change n_components to <= '
+
         # Compute the class means
         class_means = np.zeros((n_classes, n_features))
         for i in range(n_classes):
@@ -150,10 +154,11 @@ class Classifier:
 
 
 class PCALDAClassifier(Classifier):
-    def __init__(self, pca_components=25, n_components=2):
+    def __init__(self, pca_components=25, n_components=2, metric='euclidean'):
         # type: (int, int) -> None
         self.pca_components = pca_components
         self.n_components = n_components
+        self.metric = metric
         self.pca_lda = None
 
     def fit(self, X, y):
@@ -172,7 +177,7 @@ class PCALDAClassifier(Classifier):
 
         projected = self.pca_lda.project(np.atleast_2d(X))
 
-        distances = distance.cdist(projected, class_means, metric='cosine')
+        distances = distance.cdist(projected, class_means, metric=self.metric)
         min_indices = np.argmin(distances, axis=1)
 
         if return_distances:
