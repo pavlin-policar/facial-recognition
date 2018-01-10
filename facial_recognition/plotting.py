@@ -39,3 +39,17 @@ def scatter(X, y, mapping=None):
 
     plt.legend()
     plt.show()
+
+
+def faces(vecs, start=0, cols=4, rows=4):
+    for fig_idx, idx in enumerate(range(start, start + rows * cols)):
+        ax = plt.subplot(rows, cols, fig_idx + 1)
+        image_size = int(np.sqrt(vecs.shape[0]))
+        image = np.reshape(vecs[:, idx], (image_size, image_size))
+
+        ax.set_title('Face %d' % idx)
+        ax.imshow(image, cmap='gray')
+        ax.grid(False), ax.set_xticklabels([]), ax.set_yticklabels([])
+
+    plt.tight_layout()
+    plt.show()

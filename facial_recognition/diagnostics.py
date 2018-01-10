@@ -35,17 +35,7 @@ def train_pca(images_dir):
 def show_pca_eigv(model_fname, start=0, rows=3, cols=4):
     model = data_provider.load_model(model_fname)
     eigvecs = model.pca_lda.pca.subspace_basis
-
-    for fig_idx, idx in enumerate(range(start, start + rows * cols)):
-        ax = plt.subplot(rows, cols, fig_idx + 1)
-        image = np.reshape(eigvecs[:, idx], MainApp.IMAGE_SIZE)
-
-        ax.set_title('Eigenvector %d' % idx)
-        ax.imshow(image, cmap='gray')
-        ax.grid(False), ax.set_xticklabels([]), ax.set_yticklabels([])
-
-    plt.tight_layout()
-    plt.show()
+    plotting.faces(eigvecs, start=start, rows=rows, cols=cols)
 
 
 if __name__ == '__main__':
