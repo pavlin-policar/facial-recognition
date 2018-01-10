@@ -32,8 +32,11 @@ class CapitalizeDelegate(QStyledItemDelegate):
 
 
 class MainApp(QWidget):
-    STRANGER_DANGER = 0.5
+    STRANGER_DANGER = 250
     IMAGE_SIZE = (100, 100)
+
+    stranger_color = (179, 20, 20)
+    recognized_color = (59, 235, 62)
 
     def __init__(self, fps=30, parent=None):
         # type: (int, Optional[QWidget]) -> None
@@ -180,22 +183,33 @@ class MainApp(QWidget):
 
         self.detected_faces = face_cascade.detectMultiScale(gray, 1.3, 5)
         for x, y, w, h in self.detected_faces:
-            # Draw a rectangle around the detected face
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
-
             # Label the detected face as per the model
             face = gray[y:y + h, x:x + w]
             face = cv2.resize(face, self.IMAGE_SIZE)
-            predicted, distance = self.classify_face(face)
 
-            if distance > self.STRANGER_DANGER:
-                predicted = 'Stranger danger!'
+            result = self.classify_face(face)
+            # If a model is loaded, we can predict
+            if result:
+                predicted, distance = self.classify_face(face)
+
+                if distance > self.STRANGER_DANGER:
+                    predicted = 'Stranger danger!'
+                    color = self.stranger_color
+                else:
+                    predicted = predicted.capitalize()
+                    color = self.recognized_color
+
+                # Draw a rectangle around the detected face
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                text = '%s (%.1f)' % (predicted, distance)
+                cv2.putText(frame, text, (x, y + h + 15),
+                            cv2.FONT_HERSHEY_TRIPLEX, 0.5, color)
             else:
-                predicted = predicted.capitalize()
-
-            text = '%s (%.1f)' % (predicted, distance)
-            cv2.putText(frame, text, (x, y + h + 15),
-                        cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
+                # Draw a rectangle around the detected face
+                cv2.rectangle(frame, (x, y), (x + w, y + h),
+                              self.stranger_color, 2)
+                cv2.putText(frame, 'Stranger danger!', (x, y + h + 15),
+                            cv2.FONT_HERSHEY_TRIPLEX, 0.5, self.stranger_color)
 
         # Display the image in the image area
         image = QImage(frame, frame.shape[1], frame.shape[0],
