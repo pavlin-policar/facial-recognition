@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from facial_recognition import data_provider, plotting
-from facial_recognition.model import PCALDA, PCA
+from facial_recognition.model import PCALDA, PCA, PCALDAClassifier
 from facial_recognition.recognize import MainApp
 
 
@@ -36,6 +36,11 @@ def show_pca_eigv(model_fname, start=0, rows=3, cols=4):
     model = data_provider.load_model(model_fname)
     eigvecs = model.pca_lda.pca.subspace_basis
     plotting.faces(eigvecs, start=start, rows=rows, cols=cols)
+
+
+def cross_validate(images_dir):
+    X, y, mapping = data_provider.get_image_data_from_directory(images_dir)
+    clf = PCALDAClassifier(n_components=2, pca_components=500).fit(X, y)
 
 
 if __name__ == '__main__':

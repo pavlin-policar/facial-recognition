@@ -136,8 +136,9 @@ class MainApp(QWidget):
     def train(self):
         X, y, mapping = self.get_training_data()
         # Inspect scree plot to determine appropriate number of PCA components
-        projector = PCALDA(n_components=2, pca_components=500).fit(X, y)
-        classifier = PCALDAClassifier(projector)
+        classifier = PCALDAClassifier(
+            n_components=2, pca_components=500
+        ).fit(X, y)
 
         # Replace the existing running model
         self.model = classifier

@@ -150,11 +150,23 @@ class Classifier:
 
 
 class PCALDAClassifier(Classifier):
-    def __init__(self, pca_lda):
-        # type: (PCALDA) -> None
-        self.pca_lda = pca_lda
+    def __init__(self, pca_components=25, n_components=2):
+        # type: (int, int) -> None
+        self.pca_components = pca_components
+        self.n_components = n_components
+        self.pca_lda = None
+
+    def fit(self, X, y):
+        self.pca_lda = PCALDA(
+            pca_components=self.pca_components,
+            n_components=self.n_components,
+        ).fit(X, y)
+        return self
 
     def predict(self, X, return_distances=False):
+        assert self.pca_lda is not None, \
+            'You must fit %s first' % self.__class__.__name__
+
         # Find the nearest class mean to each new sample
         class_means = self.pca_lda.lda.class_means
 
